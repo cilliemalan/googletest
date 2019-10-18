@@ -1993,7 +1993,31 @@ inline bool IsDir(const StatStruct& st) {
 }
 # endif  // GTEST_OS_WINDOWS_MOBILE
 
-#else
+#elif GTEST_OS_NONE
+
+// embedded systems
+
+typedef struct stat StatStruct;
+
+inline int FileNo(FILE* file) { return 0; }
+inline int IsATTY(int fd) { return 1; }
+inline int Stat(const char* path, StatStruct* buf) { return 0; }
+inline int StrCaseCmp(const char* s1, const char* s2) {
+  return strcasecmp(s1, s2);
+}
+inline char* StrDup(const char* src) {
+    char *dst = (char*)malloc(strlen (src) + 1);
+    if (dst == NULL) return NULL;
+    strcpy(dst, src);
+    return dst;
+}
+inline int RmDir(const char* dir) { return 0; }
+inline bool IsDir(const StatStruct& st) { return 0; }
+inline FILE* fdopen(int fd, const char* mode) { return nullptr; }
+
+#define PATH_MAX 100
+
+#else  // GTEST_OS_WINDOWS
 
 typedef struct stat StatStruct;
 
@@ -2007,7 +2031,7 @@ inline char* StrDup(const char* src) { return strdup(src); }
 inline int RmDir(const char* dir) { return rmdir(dir); }
 inline bool IsDir(const StatStruct& st) { return S_ISDIR(st.st_mode); }
 
-#endif  // GTEST_OS_WINDOWS
+#endif
 
 // Functions deprecated by MSVC 8.0.
 
