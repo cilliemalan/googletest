@@ -223,7 +223,7 @@
 //
 // Integer types:
 //   TypeWithSize   - maps an integer to a int type.
-//   Int32, UInt32, Int64, UInt64, TimeInMillis
+//   Int32, UInt32, Int64, UInt64, TimeInMillis, TimeInNanos
 //                  - integers of known sizes.
 //   BiggestInt     - the biggest signed integer type.
 //
@@ -2179,6 +2179,7 @@ typedef TypeWithSize<4>::UInt UInt32;
 typedef TypeWithSize<8>::Int Int64;
 typedef TypeWithSize<8>::UInt UInt64;
 typedef TypeWithSize<8>::Int TimeInMillis;  // Represents time in milliseconds.
+typedef TypeWithSize<8>::Int TimeInNanos;  // Represents time in nanoseconds.
 
 // Utilities for command line flags and environment variables.
 

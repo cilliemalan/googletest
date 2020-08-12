@@ -105,12 +105,14 @@ GTEST_API_ extern bool g_help_flag;
 
 // Returns the current time in milliseconds.
 GTEST_API_ TimeInMillis GetTimeInMillis();
+GTEST_API_ TimeInNanos GetTimeInNanos();
 
 // Returns true if and only if Google Test should use colors in the output.
 GTEST_API_ bool ShouldUseColor(bool stdout_is_tty);
 
 // Formats the given time in milliseconds as seconds.
 GTEST_API_ std::string FormatTimeInMillisAsSeconds(TimeInMillis ms);
+GTEST_API_ std::string FormatTimeInNanosAsSeconds(TimeInNanos ms);
 
 // Converts the given time in milliseconds to a date string in the ISO 8601
 // format, without the timezone information.  N.B.: due to the use the
@@ -572,10 +574,10 @@ class GTEST_API_ UnitTestImpl {
 
   // Gets the time of the test program start, in ms from the start of the
   // UNIX epoch.
-  TimeInMillis start_timestamp() const { return start_timestamp_; }
+  TimeInNanos start_timestamp() const { return start_timestamp_; }
 
   // Gets the elapsed time, in milliseconds.
-  TimeInMillis elapsed_time() const { return elapsed_time_; }
+  TimeInNanos elapsed_time() const { return elapsed_time_; }
 
   // Returns true if and only if the unit test passed (i.e. all test suites
   // passed).
@@ -923,10 +925,10 @@ class GTEST_API_ UnitTestImpl {
 
   // The time of the test program start, in ms from the start of the
   // UNIX epoch.
-  TimeInMillis start_timestamp_;
+  TimeInNanos start_timestamp_;
 
   // How long the test took to run, in milliseconds.
-  TimeInMillis elapsed_time_;
+  TimeInNanos elapsed_time_;
 
 #if GTEST_HAS_DEATH_TEST
   // The decomposed components of the gtest_internal_run_death_test flag,

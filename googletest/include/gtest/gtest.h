@@ -517,6 +517,7 @@ class GTEST_API_ Test {
 };
 
 typedef internal::TimeInMillis TimeInMillis;
+typedef internal::TimeInNanos TimeInNanos;
 
 // A copyable object representing a user specified test property which can be
 // output as a key/value string pair.
@@ -590,11 +591,11 @@ class GTEST_API_ TestResult {
   bool HasNonfatalFailure() const;
 
   // Returns the elapsed time, in milliseconds.
-  TimeInMillis elapsed_time() const { return elapsed_time_; }
+  TimeInNanos elapsed_time() const { return elapsed_time_; }
 
-  // Gets the time of the test case start, in ms from the start of the
+  // Gets the time of the test case start, in ns from the start of the
   // UNIX epoch.
-  TimeInMillis start_timestamp() const { return start_timestamp_; }
+  TimeInNanos start_timestamp() const { return start_timestamp_; }
 
   // Returns the i-th test part result among all the results. i can range from 0
   // to total_part_count() - 1. If i is not in that range, aborts the program.
@@ -627,10 +628,10 @@ class GTEST_API_ TestResult {
   }
 
   // Sets the start time.
-  void set_start_timestamp(TimeInMillis start) { start_timestamp_ = start; }
+  void set_start_timestamp(TimeInNanos start) { start_timestamp_ = start; }
 
   // Sets the elapsed time.
-  void set_elapsed_time(TimeInMillis elapsed) { elapsed_time_ = elapsed; }
+  void set_elapsed_time(TimeInNanos elapsed) { elapsed_time_ = elapsed; }
 
   // Adds a test property to the list. The property is validated and may add
   // a non-fatal failure if invalid (e.g., if it conflicts with reserved
@@ -673,9 +674,9 @@ class GTEST_API_ TestResult {
   // Running count of death tests.
   int death_test_count_;
   // The start time, in milliseconds since UNIX Epoch.
-  TimeInMillis start_timestamp_;
+  TimeInNanos start_timestamp_;
   // The elapsed time, in milliseconds.
-  TimeInMillis elapsed_time_;
+  TimeInNanos elapsed_time_;
 
   // We disallow copying TestResult.
   GTEST_DISALLOW_COPY_AND_ASSIGN_(TestResult);
@@ -892,11 +893,11 @@ class GTEST_API_ TestSuite {
   bool Failed() const { return failed_test_count() > 0; }
 
   // Returns the elapsed time, in milliseconds.
-  TimeInMillis elapsed_time() const { return elapsed_time_; }
+  TimeInNanos elapsed_time() const { return elapsed_time_; }
 
   // Gets the time of the test suite start, in ms from the start of the
   // UNIX epoch.
-  TimeInMillis start_timestamp() const { return start_timestamp_; }
+  TimeInNanos start_timestamp() const { return start_timestamp_; }
 
   // Returns the i-th test among all the tests. i can range from 0 to
   // total_test_count() - 1. If i is not in that range, returns NULL.
@@ -1017,9 +1018,9 @@ class GTEST_API_ TestSuite {
   // True if and only if any test in this test suite should run.
   bool should_run_;
   // The start time, in milliseconds since UNIX Epoch.
-  TimeInMillis start_timestamp_;
+  TimeInNanos start_timestamp_;
   // Elapsed time, in milliseconds.
-  TimeInMillis elapsed_time_;
+  TimeInNanos elapsed_time_;
   // Holds test properties recorded during execution of SetUpTestSuite and
   // TearDownTestSuite.
   TestResult ad_hoc_test_result_;
@@ -1344,10 +1345,10 @@ class GTEST_API_ UnitTest {
 
   // Gets the time of the test program start, in ms from the start of the
   // UNIX epoch.
-  TimeInMillis start_timestamp() const;
+  TimeInNanos start_timestamp() const;
 
   // Gets the elapsed time, in milliseconds.
-  TimeInMillis elapsed_time() const;
+  TimeInNanos elapsed_time() const;
 
   // Returns true if and only if the unit test passed (i.e. all test suites
   // passed).

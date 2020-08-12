@@ -247,6 +247,7 @@ using testing::internal::GetNextRandomSeed;
 using testing::internal::GetRandomSeedFromFlag;
 using testing::internal::GetTestTypeId;
 using testing::internal::GetTimeInMillis;
+using testing::internal::GetTimeInNanos;
 using testing::internal::GetTypeId;
 using testing::internal::GetUnitTestImpl;
 using testing::internal::Int32;
@@ -1990,7 +1991,7 @@ TEST(UnitTestTest, CanGetOriginalWorkingDir) {
 
 TEST(UnitTestTest, ReturnsPlausibleTimestamp) {
   EXPECT_LT(0, UnitTest::GetInstance()->start_timestamp());
-  EXPECT_LE(UnitTest::GetInstance()->start_timestamp(), GetTimeInMillis());
+  EXPECT_LE(UnitTest::GetInstance()->start_timestamp(), GetTimeInNanos());
 }
 
 // When a property using a reserved key is supplied to this function, it

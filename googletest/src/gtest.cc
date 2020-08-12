@@ -138,6 +138,9 @@
 #include "absl/strings/str_cat.h"
 #endif  // GTEST_HAS_ABSL
 
+
+#include <chrono>
+
 namespace testing {
 
 using internal::CountIf;
@@ -823,6 +826,16 @@ std::string UnitTestImpl::CurrentOsStackTraceExceptTop(int skip_count) {
       // Skips the user-specified number of frames plus this function
       // itself.
       );  // NOLINT
+}
+
+TimeInNanos GetTimeInNanos() {
+#if GTEST_HAS_GETTIMEOFDAY_
+  std::chrono::nanoseconds rightnow = std::chrono::high_resolution_clock::now().time_since_epoch();
+  return static_cast<TimeInNanos>(rightnow.count());
+  return 0;
+#else
+# error "Don't know how to get the current time on your system."
+#endif
 }
 
 // Returns the current time in milliseconds.
@@ -2666,7 +2679,7 @@ void TestInfo::Run() {
   // Notifies the unit test event listeners that a test is about to start.
   repeater->OnTestStart(*this);
 
-  const TimeInMillis start = internal::GetTimeInMillis();
+  const TimeInNanos start = internal::GetTimeInNanos();
 
   impl->os_stack_trace_getter()->UponLeavingGTest();
 
@@ -2692,7 +2705,7 @@ void TestInfo::Run() {
   }
 
   result_.set_start_timestamp(start);
-  result_.set_elapsed_time(internal::GetTimeInMillis() - start);
+  result_.set_elapsed_time(internal::GetTimeInNanos() - start);
 
   // Notifies the unit test event listener that a test has just finished.
   repeater->OnTestEnd(*this);
@@ -2811,11 +2824,11 @@ void TestSuite::Run() {
   internal::HandleExceptionsInMethodIfSupported(
       this, &TestSuite::RunSetUpTestSuite, "SetUpTestSuite()");
 
-  start_timestamp_ = internal::GetTimeInMillis();
+  start_timestamp_ = internal::GetTimeInNanos();
   for (int i = 0; i < total_test_count(); i++) {
     GetMutableTestInfo(i)->Run();
   }
-  elapsed_time_ = internal::GetTimeInMillis() - start_timestamp_;
+  elapsed_time_ = internal::GetTimeInNanos() - start_timestamp_;
 
   impl->os_stack_trace_getter()->UponLeavingGTest();
   internal::HandleExceptionsInMethodIfSupported(
@@ -3246,8 +3259,9 @@ void PrettyUnitTestResultPrinter::OnTestEnd(const TestInfo& test_info) {
     PrintFullTestCommentIfPresent(test_info);
 
   if (GTEST_FLAG(print_time)) {
-    printf(" (%s ms)\n", internal::StreamableToString(
-           test_info.result()->elapsed_time()).c_str());
+    printf(" (%d.%d µs)\n", 
+           static_cast<int>(test_info.result()->elapsed_time() / 1000),
+           static_cast<unsigned int>((test_info.result()->elapsed_time() / 100) % 10));
   } else {
     printf("\n");
   }
@@ -3261,8 +3275,9 @@ void PrettyUnitTestResultPrinter::OnTestCaseEnd(const TestCase& test_case) {
   const std::string counts =
       FormatCountableNoun(test_case.test_to_run_count(), "test", "tests");
   ColoredPrintf(COLOR_GREEN, "[----------] ");
-  printf("%s from %s (%s ms total)\n\n", counts.c_str(), test_case.name(),
-         internal::StreamableToString(test_case.elapsed_time()).c_str());
+  printf("%s from %s (%d.%03d ms total)\n\n", counts.c_str(), test_case.name(),
+         static_cast<int>(test_case.elapsed_time() / 1000000),
+         static_cast<unsigned int>((test_case.elapsed_time() / 1000) % 1000));
   fflush(stdout);
 }
 #else
@@ -3272,8 +3287,9 @@ void PrettyUnitTestResultPrinter::OnTestSuiteEnd(const TestSuite& test_suite) {
   const std::string counts =
       FormatCountableNoun(test_suite.test_to_run_count(), "test", "tests");
   ColoredPrintf(COLOR_GREEN, "[----------] ");
-  printf("%s from %s (%s ms total)\n\n", counts.c_str(), test_suite.name(),
-         internal::StreamableToString(test_suite.elapsed_time()).c_str());
+  printf("%s from %s (%d.%03d ms total)\n\n", counts.c_str(), test_suite.name(),
+         static_cast<int>(test_suite.elapsed_time() / 1000000),
+         static_cast<unsigned int>((test_suite.elapsed_time() / 1000) % 1000))
   fflush(stdout);
 }
 #endif  // GTEST_REMOVE_LEGACY_TEST_CASEAPI_
@@ -3341,8 +3357,8 @@ void PrettyUnitTestResultPrinter::OnTestIterationEnd(const UnitTest& unit_test,
          FormatTestCount(unit_test.test_to_run_count()).c_str(),
          FormatTestSuiteCount(unit_test.test_suite_to_run_count()).c_str());
   if (GTEST_FLAG(print_time)) {
-    printf(" (%s ms total)",
-           internal::StreamableToString(unit_test.elapsed_time()).c_str());
+    printf(" (%d.%d µs total)", static_cast<int>(unit_test.elapsed_time() / 1000),
+           static_cast<unsigned int>((unit_test.elapsed_time() / 100) % 10));
   }
   printf("\n");
   ColoredPrintf(COLOR_GREEN,  "[  PASSED  ] ");
@@ -3815,7 +3831,7 @@ void XmlUnitTestResultPrinter::OutputXmlTestInfo(::std::ostream* stream,
                          ? (result.Skipped() ? "skipped" : "completed")
                          : "suppressed");
   OutputXmlAttribute(stream, kTestsuite, "time",
-                     FormatTimeInMillisAsSeconds(result.elapsed_time()));
+                     FormatTimeInMillisAsSeconds(result.elapsed_time() / 1000000));
   OutputXmlAttribute(
       stream, kTestsuite, "timestamp",
       FormatEpochTimeInMillisAsIso8601(result.start_timestamp()));
@@ -3868,7 +3884,7 @@ void XmlUnitTestResultPrinter::PrintXmlTestSuite(std::ostream* stream,
         StreamableToString(test_suite.reportable_disabled_test_count()));
     OutputXmlAttribute(stream, kTestsuite, "errors", "0");
     OutputXmlAttribute(stream, kTestsuite, "time",
-                       FormatTimeInMillisAsSeconds(test_suite.elapsed_time()));
+                       FormatTimeInMillisAsSeconds(test_suite.elapsed_time() / 1000000));
     OutputXmlAttribute(
         stream, kTestsuite, "timestamp",
         FormatEpochTimeInMillisAsIso8601(test_suite.start_timestamp()));
@@ -3899,7 +3915,7 @@ void XmlUnitTestResultPrinter::PrintXmlUnitTest(std::ostream* stream,
       StreamableToString(unit_test.reportable_disabled_test_count()));
   OutputXmlAttribute(stream, kTestsuites, "errors", "0");
   OutputXmlAttribute(stream, kTestsuites, "time",
-                     FormatTimeInMillisAsSeconds(unit_test.elapsed_time()));
+                     FormatTimeInMillisAsSeconds(unit_test.elapsed_time() / 1000000));
   OutputXmlAttribute(
       stream, kTestsuites, "timestamp",
       FormatEpochTimeInMillisAsIso8601(unit_test.start_timestamp()));
@@ -4194,7 +4210,7 @@ void JsonUnitTestResultPrinter::OutputJsonTestInfo(::std::ostream* stream,
                 FormatEpochTimeInMillisAsRFC3339(result.start_timestamp()),
                 kIndent);
   OutputJsonKey(stream, kTestsuite, "time",
-                FormatTimeInMillisAsDuration(result.elapsed_time()), kIndent);
+                FormatTimeInMillisAsDuration(result.elapsed_time() / 1000000), kIndent);
   OutputJsonKey(stream, kTestsuite, "classname", test_suite_name, kIndent,
                 false);
   *stream << TestPropertiesAsJson(result, kIndent);
@@ -4244,7 +4260,7 @@ void JsonUnitTestResultPrinter::PrintJsonTestSuite(
         FormatEpochTimeInMillisAsRFC3339(test_suite.start_timestamp()),
         kIndent);
     OutputJsonKey(stream, kTestsuite, "time",
-                  FormatTimeInMillisAsDuration(test_suite.elapsed_time()),
+                  FormatTimeInMillisAsDuration(test_suite.elapsed_time() / 1000000),
                   kIndent, false);
     *stream << TestPropertiesAsJson(test_suite.ad_hoc_test_result(), kIndent)
             << ",\n";
@@ -4288,7 +4304,7 @@ void JsonUnitTestResultPrinter::PrintJsonUnitTest(std::ostream* stream,
                 FormatEpochTimeInMillisAsRFC3339(unit_test.start_timestamp()),
                 kIndent);
   OutputJsonKey(stream, kTestsuites, "time",
-                FormatTimeInMillisAsDuration(unit_test.elapsed_time()), kIndent,
+                FormatTimeInMillisAsDuration(unit_test.elapsed_time() / 1000000), kIndent,
                 false);
 
   *stream << TestPropertiesAsJson(unit_test.ad_hoc_test_result(), kIndent)
@@ -4694,12 +4710,12 @@ int UnitTest::test_to_run_count() const { return impl()->test_to_run_count(); }
 
 // Gets the time of the test program start, in ms from the start of the
 // UNIX epoch.
-internal::TimeInMillis UnitTest::start_timestamp() const {
+internal::TimeInNanos UnitTest::start_timestamp() const {
     return impl()->start_timestamp();
 }
 
 // Gets the elapsed time, in milliseconds.
-internal::TimeInMillis UnitTest::elapsed_time() const {
+internal::TimeInNanos UnitTest::elapsed_time() const {
   return impl()->elapsed_time();
 }
 
@@ -5282,7 +5298,7 @@ bool UnitTestImpl::RunAllTests() {
 
   TestEventListener* repeater = listeners()->repeater();
 
-  start_timestamp_ = GetTimeInMillis();
+  start_timestamp_ = GetTimeInNanos();
   repeater->OnTestProgramStart(*parent_);
 
   // How many times to repeat the tests?  We don't want to repeat them
@@ -5295,7 +5311,7 @@ bool UnitTestImpl::RunAllTests() {
     // assertions executed before RUN_ALL_TESTS().
     ClearNonAdHocTestResult();
 
-    const TimeInMillis start = GetTimeInMillis();
+    const TimeInNanos start = GetTimeInNanos();
 
     // Shuffles test suites and tests if requested.
     if (has_tests_to_run && GTEST_FLAG(shuffle)) {
@@ -5346,7 +5362,7 @@ bool UnitTestImpl::RunAllTests() {
       repeater->OnEnvironmentsTearDownEnd(*parent_);
     }
 
-    elapsed_time_ = GetTimeInMillis() - start;
+    elapsed_time_ = GetTimeInNanos() - start;
 
     // Tells the unit test event listener that the tests have just finished.
     repeater->OnTestIterationEnd(*parent_, i);
